@@ -17,6 +17,7 @@ solr start -e cloud -noprompt
   solr healthcheck -c gettingstarted
 date
 ```
+#### Objectives ####
 - Launched Solr into SolrCloud mode, two nodes, two collections including shards and replicas
 - Indexed a directory of rich text files
 - Indexed Solr XML files
@@ -35,7 +36,8 @@ post -c gettingstarted example/exampledocs/books.json
 post -c gettingstarted example/exampledocs/books.csv
 solr stop -all
 
-## solr script includes built-in support for this, which not only starts Solr but also then indexes this data too
+## solr script includes built-in support for this, 
+## which not only starts Solr but also then indexes this data too
 solr start -e techproducts
 
 post -c gettingstarted -d "<delete><id>SP2514N</id></delete>"
