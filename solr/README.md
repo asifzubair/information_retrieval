@@ -54,4 +54,5 @@ post -c gettingstarted -d "<delete><id>SP2514N</id></delete>"
 - [Solr XML](https://cwiki.apache.org/confluence/display/solr/Uploading+Data+with+Index+Handlers#UploadingDatawithIndexHandlers-XMLFormattedIndexUpdates)
 - [Solr Style JSON](https://cwiki.apache.org/confluence/display/solr/Uploading+Data+with+Index+Handlers#UploadingDatawithIndexHandlers-Solr-StyleJSON)
 - [CSV Formatted Index Updates](https://cwiki.apache.org/confluence/display/solr/Uploading+Data+with+Index+Handlers#UploadingDatawithIndexHandlers-CSVFormattedIndexUpdates)
+- [git submodule tutorial](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
 
