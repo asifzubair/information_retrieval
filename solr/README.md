@@ -6,8 +6,8 @@
 
 ```shell
 date
-## note that this starts solr in cloud mode
-solr start -e cloud -noprompt 
+  ## note that this starts solr in cloud mode
+  solr start -e cloud -noprompt 
   open http://localhost:8983/solr
   post -c gettingstarted docs/
   open http://localhost:8983/solr/gettingstarted/browse
@@ -16,8 +16,10 @@ solr start -e cloud -noprompt
   post -c gettingstarted example/exampledocs/books.csv
   post -c gettingstarted -d "<delete><id>SP2514N</id></delete>"
   solr healthcheck -c gettingstarted
+  solr stop -all
 date
 ```
+
 #### Objectives ####
 - Launched Solr into SolrCloud mode, two nodes, two collections including shards and replicas
 - Indexed a directory of rich text files
@@ -28,21 +30,6 @@ date
 - Opened the /browse interface to explore Solr's features in a more friendly and familiar interface
 
 ## Commands ##
-
-```shell
-solr start -e cloud -noprompt
-post -c gettingstarted docs/
-post -c gettingstarted example/exampledocs/*.xml
-post -c gettingstarted example/exampledocs/books.json
-post -c gettingstarted example/exampledocs/books.csv
-solr stop -all
-
-## solr script includes built-in support for this, 
-## which not only starts Solr but also then indexes this data too
-solr start -e techproducts
-
-post -c gettingstarted -d "<delete><id>SP2514N</id></delete>"
-```
 
 ```shell
 solr start
@@ -77,6 +64,15 @@ POSTing file 002f117d-4bc4-4f50-a604-c9ad946e11a4.html (text/html) to [base]/ext
 19362 files indexed.
 COMMITting Solr index changes to http://localhost:8983/solr/NBCNews/update...
 Time spent: 0:09:25.668
+<=====>
+
+# Launching php server
+php -S localhost:8000 -t solr-php-client/
+<=====>
+PHP 5.6.30 Development Server started at Fri Apr  7 20:31:33 2017
+Listening on http://localhost:8000
+Document root is ~/projects/information_retrieval/solr/solr-php-client
+  ...
 <=====>
 ```
 
