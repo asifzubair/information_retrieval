@@ -31,7 +31,7 @@ if ($query)
   // which is usually most easily accomplished by placing in the
   // same directory as this script ( . or current directory is a default
   // php include path entry in the php.ini)
-  require_once('Apache/Solr/Service.php');
+  require_once('../Apache/Solr/Service.php');
 
   // create a new solr service instance - host, port, and webapp
   // path (all defaults in this example)
