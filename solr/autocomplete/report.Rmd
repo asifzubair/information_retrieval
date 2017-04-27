@@ -1,0 +1,154 @@
+---
+title: 'HW5: Solr Suggestion and Autocompletion'
+author: "asif zubair"
+date: "April 26, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\tableofcontents
+
+## Solr Config
+
+Configuration changes were made to `solrconfig.xml` to enable the suggester functionality for `solr`.
+
+We added a `suggesterComponent`:
+```xml
+<searchComponent class="solr.SuggestComponent" name="suggest">
+  <lst name="suggester">
+    <str name="name">suggest</str>
+    <str name="lookupImpl">FuzzyLookupFactory</str>
+    <str name="field">_text_</str>
+    <str name="suggestAnalyzerFieldType">text_general</str>
+  </lst>
+</searchComponent>
+```
+
+This enables the `/suggest` component and a corresponding `requestHandler` was also configured. 
+
+```xml
+<requestHandler class="solr.SearchHandler" name="/suggest">
+  <lst name="defaults">
+    <str name="suggest">true</str>
+    <str name="suggest.count">5</str>
+    <str name="suggest.dictionary">suggest</str>
+  <!--  <str name="df">_text_</str> -->
+  </lst>
+  <arr name="components">
+    <str>suggest</str>
+  </arr>
+</requestHandler>
+```
+
+In addition, a configuration change was done to ensure that queries in `/select` component are treated as `AND` and not `OR`:
+```xml
+<requestHandler name="/select" class="solr.SearchHandler">
+  <lst name="defaults">
+    <str name="echoParams">explicit</str>
+    <int name="rows">10</int>
+    <str name="df">_text_</str> 
+    <str name="q.op">AND</str>
+  </lst>
+</requestHandler>
+```
+
+## Suggestion, AutoComplete and Snippets
+
+We used the `solr-php-client` for interacting with the solr server. Buidling on the work done in the previous project, we added JS code to use the suggester results from solr:
+```js
+<link
+  href="http://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
+  rel="stylesheet"> </link>
+<title> Solr Spellcheck Autocomplete </title>
+<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+<script src="http://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
+<script>
+  $(function() {
+    var URL_PREFIX = "http://localhost:8983/solr/NBCNews2/suggest?q=";
+    var URL_SUFFIX = "&wt=json";
+    $("#q").autocomplete({
+      source : function(request, response) {
+        var URL = URL_PREFIX + $("#q").val() + URL_SUFFIX;
+        $.ajax({
+          url : URL,
+          success : function(data) {
+            array = data.suggest.suggest[$("#q").val()].suggestions
+            var docs = JSON.stringify(array);
+            var jsonData = JSON.parse(docs);
+            response($.map(jsonData, function(value, key) {
+              return {
+                label : value.term
+              }
+            }));
+          },
+          dataType : 'jsonp',
+          jsonp : 'json.wrf'
+        });
+      },
+      minLength : 1
+    })
+  });
+</script>
+```
+This JS code will call the suggester component of solr as each character is entered in to the search bar. 
+
+For doing the spellcheck, we used the php version of Norvig's spellcheck program available here - http://www.phpclasses.org/package/4859-PHP-Suggest-corrected-spelling-text-in-pure-PHP.html#download . This program requires a `big.txt` which forms the vocabulary (dictionary) file. This file was generated from the downloaded data set for NBC News using the following command:
+```shell
+find ../data/NBCNewsData/NBCNewsDownloadData -name "*.html" | \
+while read F; do 
+  cat ${F} | tika --text-main --encoding=UTF-8  >> tmp.out; 
+done
+```
+
+The following php code was used to handle incorrect spellings and suggest corrections:
+```php
+include 'SpellCorrector.php';
+$correct=SpellCorrector::correct($query);
+if (!strcasecmp($correct, $query) == 0){
+  echo '<p><a href="?q='.$correct.'&sort=lucene">Do you mean <i>'.$correct.'</i>?</a></p>';
+  echo "<p>Showing results for: ".$query."</p>";
+}
+```
+
+The snippets were constructed by looking for the query term , case-insensitive manner, in the contents of the corresponding `html` file. A short segment surrounding the word was use output as the snippet:
+```php
+$contents = plaintext(file_get_contents($id));
+$contents = filter_var($contents, FILTER_SANITIZE_STRING);
+$pos = stripos($contents,$query);
+if ($pos){
+  $string = substr($contents, $pos-30, $pos+30);
+  $snip = trim(preg_replace('/\s+/', ' ', $string));
+} else {
+  $snip = "Query not found in body";
+}
+$output = "... ".$snip." ...";
+```
+
+## Examples
+
+We show 5 examples of the auto-complete:
+
+\includegraphics[width=300pt]{assets/auto-ex-1.png}
+
+\includegraphics[width=300pt]{assets/auto-ex-2.png}
+
+\includegraphics[width=300pt]{assets/auto-ex-3.png}
+
+\includegraphics[width=300pt]{assets/auto-ex-4.png}
+
+\includegraphics[width=300pt]{assets/auto-ex-5.png}
+
+And, 5 examples of spell-correction:
+
+\includegraphics[width=300pt]{assets/spell-ex-1.png}
+
+\includegraphics[width=300pt]{assets/spell-ex-2.png}
+
+\includegraphics[width=300pt]{assets/spell-ex-4.png}
+
+\includegraphics[width=300pt]{assets/spell-ex-5.png}
+
+\includegraphics[width=400pt]{assets/spell-ex-3.png}

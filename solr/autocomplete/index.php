@@ -1,5 +1,7 @@
 <?php
 
+ini_set('memory_limit', '4096M'); 
+
 // make sure browsers see this page as utf-8 encoded HTML
 header('Content-Type: text/html; charset=utf-8');
 
@@ -31,11 +33,13 @@ if ($query)
   // which is usually most easily accomplished by placing in the
   // same directory as this script ( . or current directory is a default
   // php include path entry in the php.ini)
-  require_once('Apache/Solr/Service.php');
+  require_once('../Apache/Solr/Service.php');
+
+
 
   // create a new solr service instance - host, port, and webapp
   // path (all defaults in this example)
-  $solr = new Apache_Solr_Service('localhost', 8983, '/solr/NBCNews/');
+  $solr = new Apache_Solr_Service('localhost', 8983, '/solr/NBCNews2/');
 
   // if magic quotes is enabled then stripslashes will be needed
   if (get_magic_quotes_gpc() == 1)
@@ -77,6 +81,9 @@ if ($query)
 ?>
 <html>
   <head>
+    <link
+  href="http://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css"
+  rel="stylesheet"></link>
     <title> Solr Spellcheck Autocomplete </title>
     <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
     <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
@@ -117,6 +124,17 @@ if ($query)
       <input type="submit"/>
     </form>
 <?php
+// Spell Check 
+include 'SpellCorrector.php';
+$correct=SpellCorrector::correct($query);
+if (!strcasecmp($correct, $query) == 0){
+//  echo "Do you mean ".$correct." ?";
+  echo '<p><a href="?q='.$correct.'&sort=lucene">Do you mean <i>'.$correct.'</i>?</a></p>';
+  echo "<p>Showing results for: ".$query."</p>";
+}
+
+?>
+<?php
 
 // display results
 if ($results)
@@ -128,6 +146,25 @@ if ($results)
     <div>Results using <?php echo $engine,": "; echo $start; ?> - <?php echo $end;?> of <?php echo $total; ?>:</div>
     <ol>
 <?php
+function plaintext($html)
+{
+    // remove comments and any content found in the the comment area (strip_tags only removes the actual tags).
+    $plaintext = preg_replace('#<!--.*?-->#s', '', $html);
+
+    // put a space between list items (strip_tags just removes the tags).
+    $plaintext = preg_replace('#</li>#', ' </li>', $plaintext);
+
+    // remove all script and style tags
+    $plaintext = preg_replace('#<(script|style)\b[^>]*>(.*?)</(script|style)>#is', "", $plaintext);
+
+    // remove br tags (missed by strip_tags)
+    $plaintext = preg_replace("#<br[^>]*?>#", " ", $plaintext);
+
+    // remove all remaining html
+    $plaintext = strip_tags($plaintext);
+
+    return $plaintext;
+}
   // iterate result documents
   foreach ($results->response->docs as $doc)
   {
@@ -149,6 +186,18 @@ if ($results)
         };
       }
     }
+
+    $contents = plaintext(file_get_contents($id));
+    $contents = filter_var($contents, FILTER_SANITIZE_STRING);
+    $pos = stripos($contents,$query);
+    if ($pos){
+      $string = substr($contents, $pos-30, $pos+30);
+      $snip = trim(preg_replace('/\s+/', ' ', $string));
+     } else {
+       $snip = "Query not found in body";
+     }
+    $output = "... ".$snip." ...";
+
 ?>
           <tr>
             <th> <?php echo "Title"; ?> </th>
@@ -165,6 +214,10 @@ if ($results)
           <tr>          
             <th> <?php echo "Description"; ?> </th>
             <td> <?php echo $desc; ?> </td>
+          </tr>
+          <tr>          
+            <th> <?php echo "Snippet"; ?> </th>
+            <td> <?php echo $output; ?> </td>
           </tr>
 <?php
 //    }
