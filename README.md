@@ -1,2 +1,2 @@
-# information_retrieval
+# Information Retrieval
 Information Retrieval and Web Search Engines
